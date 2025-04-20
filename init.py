@@ -13,18 +13,19 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-def generate_empty_config(file_path: str | Path) -> None:
+def generate_empty_config(file_path: str | Path, module_dir: Path) -> None:
     """
     Generates an empty configuration file with default sections.
 
     Args:
         file_path (str | Path): The path where the configuration file will be created.
+        module_dir (Path): The directory where the module files are located.
     """
     config = configparser.ConfigParser()
 
-    config['FilePaths'] = {}
-    config['ToolPaths'] = {}
-    config['Configs'] = {}
+
+
+
 
     file_path = Path(file_path).resolve()
     file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -35,18 +36,12 @@ def generate_empty_config(file_path: str | Path) -> None:
     logger.info(f"Default configuration file created at {file_path}")
 
 
-def find_or_create_project_ini(start_path: Optional[Path] = None) -> tuple[Path, str]:
+def find_or_create_project_ini(module_dir) -> tuple[Path, str]:
     """
     Finds or creates a 'project.ini' file in the specified directory or its parent directories.
-
-    Args:
-        start_path (Path, optional): The starting directory to search for 'project.ini'. Defaults to the script's directory.
-
-    Returns:
-        tuple[Path, str]: A tuple containing the resolved path to 'project.ini' and the mode ('independent' or 'module').
     """
-    if start_path is None:
-        start_path = Path(__file__).resolve().parent
+
+    start_path = Path(__file__).resolve().parent
 
     current = start_path
     max_levels = 2
@@ -64,9 +59,8 @@ def find_or_create_project_ini(start_path: Optional[Path] = None) -> tuple[Path,
         current = current.parent
 
     if project_ini is None:
-        # Create default project.ini using reusable config generator
         project_ini = start_path / "project.ini"
-        generate_empty_config(project_ini)
+        generate_empty_config(project_ini, module_dir / "project.ini")
         mode = "independent"
     else:
         logger.info(f"Found project.ini at {project_ini}")
@@ -74,9 +68,9 @@ def find_or_create_project_ini(start_path: Optional[Path] = None) -> tuple[Path,
     return project_ini.resolve(), mode
 
 
-def create_module_conf(module_name: str, project_ini_path: Path, mode: str) -> tuple[Path, configparser.ConfigParser]:
+def create_module_conf(module_name: str, project_ini_path: Path, mode: str, module_dir) -> tuple[Path, configparser.ConfigParser]:
     """
-    Creates a configuration file for the specified module.
+    Creates a configuration file for the specified module if it does not already exist.
 
     Args:
         module_name (str): The name of the module.
@@ -86,24 +80,48 @@ def create_module_conf(module_name: str, project_ini_path: Path, mode: str) -> t
     Returns:
         tuple[Path, configparser.ConfigParser]: A tuple containing the resolved path to the created configuration file and the config object.
     """
-    module_dir = Path(__file__).resolve().parent
-    conf_path = module_dir / "conf.ini"
+
+    conf_path = module_dir / "bmsConf.ini"
+
+    if conf_path.exists():
+        logger.info(f"Configuration file already exists at {conf_path}")
+        conf = configparser.ConfigParser()
+        conf.read(conf_path)
+        return conf_path.resolve(), conf
 
     conf = configparser.ConfigParser()
-    conf['MODULE'] = {
+    conf['Config'] = {
         'module_name': module_name,
         'mode': mode,
         'project_ini_path': str(project_ini_path)
     }
+    conf['Directories'] = {
+        "StrDirectory": str(module_dir / "GameFiles" / "USRDIR"),
+        "OutDirectory": str(module_dir / "GameFiles" / "quickbms_out"),
+        "LogFilePath": str(module_dir / "qbms.log")
+    }
+    conf['Scripts'] = {
+        "BmsScriptPath": str(module_dir / "Tools" / "quickbms" / "simpsons_str.bms"),
+        "QuickBMSEXEPath": str(module_dir / "Tools" / "quickbms" / "exe" / "quickbms.exe"),
+        "RenameFoldersScriptPath": str(module_dir / "Tools" / "process" / "Rename" / "RenameFolders.ps1"),
+        "FlattenDirectoryScriptPath": str(module_dir / "Tools" / "process" / "Flat" / "flat.csx"),
+    }
 
     with open(conf_path, 'w') as f:
         conf.write(f)
-    logger.info(f"Created conf.ini for module '{module_name}' at {conf_path}")
+    logger.info(f"Created bmsConf.ini for module '{module_name}' at {conf_path}")
 
     return conf_path.resolve(), conf
 
 
-if __name__ == "__main__":
+def main():
+    module_dir = Path(__file__).resolve().parent
+
     logging.basicConfig(level=logging.INFO)
-    project_ini, mode = find_or_create_project_ini()
-    create_module_conf(module_name="QuickBMS", project_ini_path=project_ini, mode=mode)
+    project_ini, mode = find_or_create_project_ini(module_dir)
+    create_module_conf(module_name="QuickBMS", project_ini_path=project_ini, mode=mode, module_dir=module_dir)
+
+    return mode
+
+if __name__ == "__main__":
+    main()

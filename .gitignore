@@ -20,4 +20,5 @@ asset_mapping.json
 main.log
 config.ini
 
-AssetHandlerMini
+__pycache__
+
