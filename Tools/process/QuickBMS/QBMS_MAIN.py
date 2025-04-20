@@ -1,4 +1,3 @@
-
 import os
 import re
 import subprocess
@@ -101,6 +100,8 @@ def main():
 		try:
 			result = subprocess.run([quickbms] + args, capture_output=True, text=True)
 			quickbms_output = result.stdout
+			quickbms_error = result.stderr
+			full_output = quickbms_output + "\n" + quickbms_error
 			print("# Start quickBMS Output")
 			print(quickbms_output)
 			print("# End quickBMS Output")
@@ -109,8 +110,10 @@ def main():
 			continue
 
 		# Extract coverage percentages
-		coverage_regex = re.compile(r'coverage file\s+(-?\d+)\s+([\d.]+)%\s+\d+\s+\d+\s+\.\s+offset\s+([0-9a-fA-F]+)')
-		matches = coverage_regex.findall(quickbms_output)
+		coverage_regex = re.compile(
+			r'coverage file\s+(-?\d+)\s+(\d+)%\s+\d+\s+\d+\s+\.\s+offset\s+([0-9a-fA-F]+)'
+		)
+		matches = coverage_regex.findall(full_output)
 
 		if matches:
 			print("Coverage Percentages:")
