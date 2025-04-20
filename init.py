@@ -106,4 +106,4 @@ def create_module_conf(module_name: str, project_ini_path: Path, mode: str) -> t
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     project_ini, mode = find_or_create_project_ini()
-    create_module_conf(module_name="Video", project_ini_path=project_ini, mode=mode)
+    create_module_conf(module_name="QuickBMS", project_ini_path=project_ini, mode=mode)
