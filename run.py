@@ -3,9 +3,9 @@ import configparser
 import os
 import shutil  # Added missing import
 
-import init
-import Tools.process.Rename.RenameFolders as RenameFolders
-import Tools.process.QuickBMS.QBMS_MAIN as QBMS_MAIN
+from . import init
+from .Tools.process.Rename import RenameFolders
+from .Tools.process.QuickBMS import QBMS_MAIN
 
 def read_config(file_path: str) -> str:
     """Reads and displays the contents of a configuration file."""
