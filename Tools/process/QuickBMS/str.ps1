@@ -57,8 +57,8 @@ Write-Host "path from config: $PathValue" -ForegroundColor Cyan
 if ($null -ne $PathValue) {
     if (-not (Test-Path -Path $PathValue)) {
         Write-Error "QuickBMSExePath not found at: $PathValue"
-		exit 1
-	}
+        exit 1
+    }
 }
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

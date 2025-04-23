@@ -648,7 +648,7 @@ Some important notes about the QuickBMS environment:
   From http://www.acm.uiuc.edu/webmonkeys/book/c_guide/1.1.html
 
     Escape Name / Meaning
-    \a 	   Alert
+    \a        Alert
     \b     Backspace
     \f     Form Feed
     \n     New Line

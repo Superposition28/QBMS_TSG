@@ -87,9 +87,9 @@ static void ProcessSourceDirectory(string sourcePath, string destinationParentPa
     Log($" -> Accumulated Flattened Name: '{accumulatedFlattenedName}'", ConsoleColor.DarkGreen);
     LogVerbose($"Processing Source: '{sourcePath}' -> Dest Parent: '{destinationParentPath}' (Accumulated Name: '{accumulatedFlattenedName}')");
 
-	if (accumulatedFlattenedName != ""){
-		accumulatedFlattenedName = SanitizeName(accumulatedFlattenedName);
-	}
+    if (accumulatedFlattenedName != ""){
+        accumulatedFlattenedName = SanitizeName(accumulatedFlattenedName);
+    }
 
 
     string[] childDirs;
@@ -145,7 +145,7 @@ static void ProcessSourceDirectory(string sourcePath, string destinationParentPa
             // We do NOT create a folder named after the root dir itself.
             finalDestDirPath = destinationParentPath;
             LogVerbose($"Processing root directory's children directly into '{finalDestDirPath}'");
-			Thread.Sleep(1000);
+            Thread.Sleep(1000);
         } else {
             // For all other directories (or the root *after* some initial flattening),
             // construct the path and create the directory as usual.
@@ -172,7 +172,7 @@ static void ProcessSourceDirectory(string sourcePath, string destinationParentPa
             } else {
                 LogVerbose($"Destination directory '{finalDestDirPath}' already exists.");
             }
-			//Thread.Sleep(1000); // Optional: Pause for clarity in output
+            //Thread.Sleep(1000); // Optional: Pause for clarity in output
         }
 
 
@@ -237,45 +237,45 @@ static void ProcessSourceDirectory(string sourcePath, string destinationParentPa
 }
 
 public class SanitizationRule {
-	public string Pattern { get; set; }
-	public string Replacement { get; set; }
-	public bool IsRegex { get; set; }
+    public string Pattern { get; set; }
+    public string Replacement { get; set; }
+    public bool IsRegex { get; set; }
 }
 
 public static string SanitizeName(string inputName) {
-	LogVerbose($"Sanitizing name: '{inputName}'");
+    LogVerbose($"Sanitizing name: '{inputName}'");
 
-	List<SanitizationRule> rules = new List<SanitizationRule>() {
-		new SanitizationRule { Pattern = Regex.Escape("build++PS3++ntsc_en"), Replacement = "US_AU", IsRegex = true },
-		new SanitizationRule { Pattern = Regex.Escape("story_mode++story_mode_design.str++story_mode_design_str"), Replacement = "story_mode_design_STR", IsRegex = true },
-		new SanitizationRule { Pattern = Regex.Escape("challenge_mode++challenge_mode_designSTR"), Replacement = "challenge_mode_design_STR", IsRegex = true },
-		new SanitizationRule { Pattern = @"^texture_dictionary\+\+.*?\+\+chars$", Replacement = "Textures", IsRegex = true }, // texture_dictionary++dayofthedolphins++story_mode
-		new SanitizationRule { Pattern = Regex.Escape("ASSET_RWS++texture_dictionary++GlobalFolder++costumes"), Replacement = "RWS+Textures", IsRegex = true },
-		new SanitizationRule { Pattern = @"^texture_dictionary\+\+(.*?)\+\+design$", Replacement = "$1_Textures", IsRegex = true }, // e.g., "texture_dictionary++spr_hub++design" -> "spr_hub_Textures"
-		new SanitizationRule { Pattern = @"^.*?_Textures\+\+Act_.*_folderstream$", Replacement = "Textures", IsRegex = true }, // {mapname}_Textures++Act_{number}_folderstream -> Textures 
-		new SanitizationRule { Pattern = @"^(.*)\.str\+\+(.*)_str$", Replacement = "$1STR", IsRegex = true }, // e.g., "spr_hub.str++spr_hub_str" -> "spr_hubSTR"
-		new SanitizationRule { Pattern = @"^assets_rws\+\+(.*?)\+\+\1$", Replacement = "ASSET_RWS", IsRegex = true }, // e.g., "assets_rws++spr_hub++spr_hub" -> "ASSET_RWS"
-		new SanitizationRule { Pattern = "^audio\\+\\+", Replacement = "", IsRegex = true }
-	};
+    List<SanitizationRule> rules = new List<SanitizationRule>() {
+        new SanitizationRule { Pattern = Regex.Escape("build++PS3++ntsc_en"), Replacement = "US_AU", IsRegex = true },
+        new SanitizationRule { Pattern = Regex.Escape("story_mode++story_mode_design.str++story_mode_design_str"), Replacement = "story_mode_design_STR", IsRegex = true },
+        new SanitizationRule { Pattern = Regex.Escape("challenge_mode++challenge_mode_designSTR"), Replacement = "challenge_mode_design_STR", IsRegex = true },
+        new SanitizationRule { Pattern = @"^texture_dictionary\+\+.*?\+\+chars$", Replacement = "Textures", IsRegex = true }, // texture_dictionary++dayofthedolphins++story_mode
+        new SanitizationRule { Pattern = Regex.Escape("ASSET_RWS++texture_dictionary++GlobalFolder++costumes"), Replacement = "RWS+Textures", IsRegex = true },
+        new SanitizationRule { Pattern = @"^texture_dictionary\+\+(.*?)\+\+design$", Replacement = "$1_Textures", IsRegex = true }, // e.g., "texture_dictionary++spr_hub++design" -> "spr_hub_Textures"
+        new SanitizationRule { Pattern = @"^.*?_Textures\+\+Act_.*_folderstream$", Replacement = "Textures", IsRegex = true }, // {mapname}_Textures++Act_{number}_folderstream -> Textures 
+        new SanitizationRule { Pattern = @"^(.*)\.str\+\+(.*)_str$", Replacement = "$1STR", IsRegex = true }, // e.g., "spr_hub.str++spr_hub_str" -> "spr_hubSTR"
+        new SanitizationRule { Pattern = @"^assets_rws\+\+(.*?)\+\+\1$", Replacement = "ASSET_RWS", IsRegex = true }, // e.g., "assets_rws++spr_hub++spr_hub" -> "ASSET_RWS"
+        new SanitizationRule { Pattern = "^audio\\+\\+", Replacement = "", IsRegex = true }
+    };
 
-	string outputName = inputName;
+    string outputName = inputName;
 
-	foreach (var rule in rules) {
-		string before = outputName;
-		if (rule.IsRegex) {
-			outputName = Regex.Replace(outputName, rule.Pattern, rule.Replacement);
-		} else {
-			outputName = outputName.Replace(rule.Pattern, rule.Replacement);
-		}
-		if (before != outputName) {
-			LogVerbose($"Rule applied: Pattern='{rule.Pattern}', Replacement='{rule.Replacement}'");
-			LogVerbose($"  Before: '{before}'");
-			LogVerbose($"  After:  '{outputName}'");
-		}
-	}
+    foreach (var rule in rules) {
+        string before = outputName;
+        if (rule.IsRegex) {
+            outputName = Regex.Replace(outputName, rule.Pattern, rule.Replacement);
+        } else {
+            outputName = outputName.Replace(rule.Pattern, rule.Replacement);
+        }
+        if (before != outputName) {
+            LogVerbose($"Rule applied: Pattern='{rule.Pattern}', Replacement='{rule.Replacement}'");
+            LogVerbose($"  Before: '{before}'");
+            LogVerbose($"  After:  '{outputName}'");
+        }
+    }
 
-	LogVerbose($"Sanitized name result: '{outputName}'");
-	return outputName;
+    LogVerbose($"Sanitized name result: '{outputName}'");
+    return outputName;
 }
 
 
