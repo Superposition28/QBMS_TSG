@@ -6,6 +6,7 @@ import shutil  # Added missing import
 from . import init
 from .Tools.process.Rename import RenameFolders
 from .Tools.process.QuickBMS import QBMS_MAIN
+from .Tools.process.Flat import flat
 
 def read_config(file_path: str) -> str:
     """Reads and displays the contents of a configuration file."""
@@ -48,9 +49,14 @@ def main() -> None:
     elif mode == "module":
         print("Running in module mode.")
 
+    print("Running rename folders.")
     RenameFolders.main()
 
+    print("Running QuickBMS.")
     QBMS_MAIN.main()
+
+    print("Running flattener.")
+    flat.main()
 
 if __name__ == "__main__":
     main()

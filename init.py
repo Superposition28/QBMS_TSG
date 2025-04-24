@@ -97,7 +97,8 @@ def create_module_conf(module_name: str, project_ini_path: Path, mode: str, modu
     }
     conf['Directories'] = {
         "StrDirectory": str(module_dir / "GameFiles" / "USRDIR"),
-        "OutDirectory": str(module_dir / "GameFiles" / "quickbms_out"),
+        "OutDirectory": str(module_dir / "GameFiles" / "QbmsOut"),
+        "FlatDirectory": str(module_dir / "GameFiles" / "quickbms_out"),
         "LogFilePath": str(module_dir / "qbms.log")
     }
     conf['Scripts'] = {
