@@ -32,6 +32,7 @@ global root_dir, destination_dir, VERBOSE, DEBUG, SANITIZATION_RULES
 VERBOSE = "VERBOSE" in os.environ and os.environ["VERBOSE"].lower() == "true"
 DEBUG = "DEBUG" in os.environ and os.environ["DEBUG"].lower() == "true"
 
+
 # --- Sanitization Rules ---
 SANITIZATION_RULES = [
     {"pattern": re.escape("build++PS3++pal_en"), "replacement": "EU_EN", "is_regex": True},
