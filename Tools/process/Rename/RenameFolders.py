@@ -1,41 +1,18 @@
-
 import os
-import configparser
-
-def find_conf_ini(start_path):
-    """Traverse the directory tree upwards to find bmsConf.ini."""
-    current_path = start_path
-    while True:
-        moduleConfigPath = os.path.join(current_path, "bmsConf.ini")
-        if os.path.exists(moduleConfigPath):
-            return moduleConfigPath
-        parent_path = os.path.dirname(current_path)
-        if parent_path == current_path:  # Reached the root directory
-            break
-        current_path = parent_path
-    return None
-
-def main():
-
-    # Find bmsConf.ini by traversing upwards
-    start_directory = os.path.abspath(os.path.dirname(__file__))
-    moduleConfigPath = find_conf_ini(start_directory)
-
-    if not moduleConfigPath:
-        print("Error: bmsConf.ini not found in any parent directory.")
-        exit(1)
-
-    print(f"bmsConf.ini found at: {moduleConfigPath}")
+import json
+from ....printer import print, print_error, print_verbose, print_debug, colours
 
 
-    # Read the path to the main ini file from bmsConf.ini
-    moduleConfig = configparser.ConfigParser()
-    moduleConfig.read(moduleConfigPath)
+def main(project_dir, module_dir) -> None:
+
+    # Load configuration from JSON file
+    with open(os.path.join(project_dir, 'project.json'), 'r') as f:
+        config = json.load(f)
 
     # Directory where the files are located
-    strdirectory = moduleConfig.get('Directories', 'strdirectory')
+    strdirectory = config['Extract']['Directories']['StrDirectory']
 
-    print(f"Processing directory: {strdirectory}")
+    print(colours.YELLOW, f"Processing directory: {strdirectory}")
 
     # Mapping of old names to new names
     rename_map = {
@@ -73,32 +50,32 @@ def main():
         item_path = os.path.join(strdirectory, item)
         if os.path.isdir(item_path):
             total_items += 1
-            print(f"Processing item: {item}")
+            #print(f"Processing item: {item}")
 
             # Check if the old name exists in the mapping
             if item in rename_map:
                 new_name = rename_map[item]
                 new_path = os.path.join(strdirectory, new_name)
-                print(f"Old path: {item_path}")
-                print(f"New path: {new_path}")
+                print(colours.GRAY, f"Old path: {item_path}")
+                print(colours.GRAY, f"New path: {new_path}")
 
                 # Perform the renaming
                 os.rename(item_path, new_path)
-                print(f"Renamed '{item}' to '{new_name}'")
+                print(colours.GREEN, f"Renamed '{item}' to '{new_name}'")
                 renamed_items += 1
             else:
-                print(f"Skipped '{item}' - no matching key in rename map")
+                print(colours.CYAN, f"Skipped '{item}' - no matching key in rename map")
                 skipped_items += 1
 
     # Log summary
-    print(f"Processing complete. Total items: {total_items}, Renamed: {renamed_items}, Skipped: {skipped_items}")
+    print(colours.GREEN, f"Processing complete. Total items: {total_items}, Renamed: {renamed_items}, Skipped: {skipped_items}")
 
     # Output all variables for debugging
-    print("\n--- Debugging Outputs ---")
-    print(f"Directory: {strdirectory}")
-    print("Rename Map:")
-    for old_name, new_name in rename_map.items():
-        print(f"  {old_name} = {new_name}")
-    print(f"Total Items Processed: {total_items}")
-    print(f"Items Renamed: {renamed_items}")
-    print(f"Items Skipped: {skipped_items}")
+    #print("\n--- Debugging Outputs ---")
+    #print(f"Directory: {strdirectory}")
+    #print("Rename Map:")
+    #for old_name, new_name in rename_map.items():
+    #    print(f"  {old_name} = {new_name}")
+    #print(f"Total Items Processed: {total_items}")
+    #print(f"Items Renamed: {renamed_items}")
+    #print(f"Items Skipped: {skipped_items}")

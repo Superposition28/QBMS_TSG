@@ -2,64 +2,46 @@ import os
 import re
 import subprocess
 from datetime import datetime
-import configparser
+import json
+from ....printer import print, print_error, print_verbose, print_debug, colours
 
-def find_conf_ini(start_path):
-    """Traverse the directory tree upwards to find bmsConf.ini."""
-    current_path = start_path
-    while True:
-        moduleConfigPath = os.path.join(current_path, "bmsConf.ini")
-        if os.path.exists(moduleConfigPath):
-            return moduleConfigPath
-        parent_path = os.path.dirname(current_path)
-        if parent_path == current_path:  # Reached the root directory
-            break
-        current_path = parent_path
-    return None
 
-def main():
+def main(project_dir: str, module_dir: str) -> None:
 
-    # Find bmsConf.ini by traversing upwards
-    start_directory = os.path.abspath(os.path.dirname(__file__))
-    moduleConfigPath = find_conf_ini(start_directory)
-
-    if not moduleConfigPath:
-        print("Error: bmsConf.ini not found in any parent directory.")
+    # Load configuration from JSON file
+    try:
+        with open(os.path.join(project_dir, 'project.json'), 'r') as f:
+            config = json.load(f)["Extract"]
+    except Exception as e:
+        print_error(f"Error loading project.json: {e}")
         exit(1)
 
-    print(f"bmsConf.ini found at: {moduleConfigPath}")
-
-
-    # Read the path to the main ini file from bmsConf.ini
-    moduleConfig = configparser.ConfigParser()
-    moduleConfig.read(moduleConfigPath)
-
     try:
-        str_directory = moduleConfig.get("Directories", "StrDirectory")
-        out_directory = moduleConfig.get("Directories", "OutDirectory")
-        log_file_path = moduleConfig.get("Directories", "LogFilePath")
-        bms_script = moduleConfig.get("Scripts", "BmsScriptPath")
+        str_directory = config["Directories"]["StrDirectory"]
+        out_directory = config["Directories"]["OutDirectory"]
+        log_file_path = config["Directories"]["LogFilePath"]
+        bms_script = config["Scripts"]["BmsScriptPath"]
     except Exception as e:
-        print(f"Error reading paths from main ini file: {e}")
+        print_error(f"Error reading paths from main ini file: {e}")
         exit(1)
 
     # Ensure log file exists
     if not os.path.exists(log_file_path):
-        print(f"Creating log file at {log_file_path}")
+        print(colours.BLUE, f"Creating log file at {log_file_path}")
         try:
             with open(log_file_path, 'w') as log_file:
                 log_file.write("")
-            print("Log file created successfully.")
+            print(colours.GREEN, "Log file created successfully.")
         except Exception as e:
-            print(f"Error creating log file: {e}")
+            print_error(f"Error creating log file: {e}")
             exit(1)
     else:
-        print(f"Log file already exists at {log_file_path}")
+        print(colours.BLUE, f"Log file already exists at {log_file_path}")
 
     # Parameters
     overwrite_option = "s"  # Default to 's' (skip all)
 
-    quickbms = moduleConfig.get("Scripts", "QuickBMSEXEPath")
+    quickbms = config["Scripts"]["QuickBMSEXEPath"]
 
     # Get all .str files in the source directory
     str_files = []
@@ -68,17 +50,17 @@ def main():
             if file.endswith(".str"):
                 str_files.append(os.path.join(root, file))
 
-    print(f"Found {len(str_files)} .str files to process.")
+    print(colours.BLUE, f"Found {len(str_files)} .str files to process.")
 
     # Process each .str file
     for file_path in str_files:
-        print(f"Processing file: {file_path}")
+        print(colours.BLUE, f"Processing file: {file_path}")
 
         # Construct the output directory
         relative_path = os.path.relpath(file_path, start=str_directory)
         output_directory = os.path.join(out_directory, os.path.splitext(relative_path)[0] + "_str")
 
-        print(f"Output Directory: {output_directory}")
+        print(colours.BLUE, f"Output Directory: {output_directory}")
 
         # Ensure the output directory exists
         os.makedirs(output_directory, exist_ok=True)
@@ -94,7 +76,7 @@ def main():
         else:
             args = [bms_script, file_path, output_directory]
 
-        print(f"QuickBMS Command: {quickbms} {' '.join(args)}")
+        print(colours.BLUE, f"QuickBMS Command: {quickbms} {' '.join(args)}")
 
         # Execute the QuickBMS command
         try:
@@ -102,11 +84,11 @@ def main():
             quickbms_output = result.stdout
             quickbms_error = result.stderr
             full_output = quickbms_output + "\n" + quickbms_error
-            print("# Start quickBMS Output")
-            print(quickbms_output)
-            print("# End quickBMS Output")
+            print(colours.BLUE, "# Start quickBMS Output")
+            print(colours.CYAN, quickbms_output)
+            print(colours.BLUE, "# End quickBMS Output")
         except Exception as e:
-            print(f"Error executing QuickBMS: {e}")
+            print_error(f"Error executing QuickBMS: {e}")
             continue
 
         # Extract coverage percentages
@@ -116,10 +98,10 @@ def main():
         matches = coverage_regex.findall(full_output)
 
         if matches:
-            print("Coverage Percentages:")
+            print(colours.CYAN, "Coverage Percentages:")
             for match in matches:
                 file_number, percentage, offset = match
-                print(f"  File: {file_number}, Percentage: {percentage}%, Offset: 0x{offset}")
+                print(colours.BLUE, f"  File: {file_number}, Percentage: {percentage}%, Offset: 0x{offset}")
 
                 # Log the file name and percentage to the log file
                 try:
@@ -127,13 +109,10 @@ def main():
                     with open(log_file_path, 'a') as log_file:
                         log_file.write(log_entry)
                 except Exception as e:
-                    print(f"Error writing to log file: {e}")
+                    print(colours.BLUE, f"Error writing to log file: {e}")
         else:
-            print("No coverage information found.")
+            print(colours.CYAN, "No coverage information found.")
 
-        print(f"Processed {os.path.basename(file_path)} -> Output Directory: {output_directory}")
+        print(colours.BLUE, f"Processed {os.path.basename(file_path)} -> Output Directory: {output_directory}")
 
-    print("QuickBMS processing completed.")
-
-if __name__ == "__main__":
-    main()
+    print(colours.BLUE, "QuickBMS processing completed.")

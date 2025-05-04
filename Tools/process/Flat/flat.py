@@ -8,20 +8,9 @@ import shutil
 import hashlib
 import re
 import time
-import configparser
+import json
 from pathlib import Path
-
-# --- ANSI Color Codes ---
-class Colors:
-    RESET = '\033[0m'
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    MAGENTA = '\033[95m'
-    CYAN = '\033[96m'
-    GRAY = '\033[90m'
-    DARK_GREEN = '\033[32m' # Using standard green for dark green
+from ....printer import print, print_error, print_verbose, print_debug, colours
 
 
 # -- Begin Global Variables --
@@ -47,40 +36,17 @@ SANITIZATION_RULES = [
     {"pattern": r"^audio\+\+", "replacement": "", "is_regex": True}
 ]
 
-# -- End Global Variables --
-# -- Begin Helper Functions --
-
-# --- Logging Functions ---
-def log(message, color=Colors.GRAY):
-    print(f"{color}{message}{Colors.RESET}")
-
-def log_info(message):
-    log(message, Colors.CYAN)
-
-def log_success(message):
-    log(message, Colors.GREEN)
-
-def log_warning(message):
-    log(message, Colors.YELLOW)
-
-def log_error(message):
-    print(f"{Colors.RED}{message}{Colors.RESET}", file=sys.stderr)
-
-def log_verbose(message):
-    # Set VERBOSE = True to enable verbose logging
-    if VERBOSE:
-        log(f"VERBOSE: {message}", Colors.GRAY)
-
-def log_debug(message):
-    # Set DEBUG = True to enable debug logging
-    if DEBUG:
-        log(f"DEBUG: {message}", Colors.MAGENTA)
-
-# -- End Helper Functions --
-# -- Begin Main Functions --
-
 # --- Hash Calculation ---
-def get_file_sha256(file_path):
+def get_file_sha256(file_path: str) -> str:
+    """
+    Calculate the SHA256 hash of a file.
+
+    Args:
+        file_path (str): The path to the file.
+
+    Returns:
+        str: The SHA256 hash of the file as a hexadecimal string.
+    """
     try:
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"File not found at '{file_path}'.")
@@ -91,11 +57,20 @@ def get_file_sha256(file_path):
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     except Exception as ex:
-        log_error(f"Error calculating SHA256 hash for file '{file_path}': {ex}")
+        print_error(f"Error calculating SHA256 hash for file '{file_path}': {ex}")
         sys.exit(1)
 
-def sanitize_name(input_name):
-    log_verbose(f"Sanitizing name: '{input_name}'")
+def sanitize_name(input_name: str) -> str:
+    """
+    Sanitize the given input name based on predefined sanitization rules.
+
+    Args:
+        input_name (str): The name to be sanitized.
+
+    Returns:
+        str: The sanitized name after applying the rules.
+    """
+    print_verbose(f"Sanitizing name: '{input_name}'")
     output_name = input_name
     for rule in SANITIZATION_RULES:
         before = output_name
@@ -106,22 +81,22 @@ def sanitize_name(input_name):
                 # For non-regex, treat pattern as literal string
                 output_name = output_name.replace(rule["pattern"], rule["replacement"])
             if before != output_name:
-                log_verbose(f"Rule applied: Pattern='{rule['pattern']}', Replacement='{rule['replacement']}'")
-                log_verbose(f"  Before: '{before}'")
-                log_verbose(f"  After:  '{output_name}'")
+                print_verbose(f"Rule applied: Pattern='{rule['pattern']}', Replacement='{rule['replacement']}'")
+                print_verbose(f"  Before: '{before}'")
+                print_verbose(f"  After:  '{output_name}'")
         except re.error as e:
-            log_error(f"Regex error in rule pattern '{rule['pattern']}': {e}")
+            print_error(f"Regex error in rule pattern '{rule['pattern']}': {e}")
             # Decide whether to continue or exit
             # sys.exit(1)
-    log_verbose(f"Sanitized name result: '{output_name}'")
+    print_verbose(f"Sanitized name result: '{output_name}'")
     return output_name
 
 # --- Recursive Processing Function ---
 def process_source_directory(source_path, destination_parent_path, accumulated_flattened_name, base_destination_dir, original_root_dir_abs):
-    log(f"Processing Source Directory: '{source_path}'", Colors.GREEN)
-    log(f" -> Destination Parent Path: '{destination_parent_path}'", Colors.DARK_GREEN)
-    log(f" -> Accumulated Flattened Name: '{accumulated_flattened_name}'", Colors.DARK_GREEN)
-    log_verbose(f"Processing Source: '{source_path}' -> Dest Parent: '{destination_parent_path}' (Accumulated Name: '{accumulated_flattened_name}')")
+    print(colours.GREEN, f"Processing Source Directory: '{source_path}'")
+    print(colours.DARK_GREEN, f" -> Destination Parent Path: '{destination_parent_path}'")
+    print(colours.DARK_GREEN, f" -> Accumulated Flattened Name: '{accumulated_flattened_name}'")
+    print_verbose(f"Processing Source: '{source_path}' -> Dest Parent: '{destination_parent_path}' (Accumulated Name: '{accumulated_flattened_name}')")
 
     if accumulated_flattened_name:
         accumulated_flattened_name = sanitize_name(accumulated_flattened_name)
@@ -140,7 +115,7 @@ def process_source_directory(source_path, destination_parent_path, accumulated_f
                 child_files.append(item_path)
         child_count = len(child_dirs) + len(child_files)
     except Exception as ex:
-        log_error(f"Error reading contents of '{source_path}': {ex}.")
+        print_error(f"Error reading contents of '{source_path}': {ex}.")
         sys.exit(1)
 
     # --- Case 1: Flattening Condition ---
@@ -152,8 +127,8 @@ def process_source_directory(source_path, destination_parent_path, accumulated_f
         new_accumulated_name = f"{source_base_name}++{child_base_name}" if not accumulated_flattened_name \
                             else f"{accumulated_flattened_name}++{child_base_name}"
 
-        log_verbose(f"Flattening: '{source_base_name}' contains only '{child_base_name}'. New accumulated name: '{new_accumulated_name}'")
-        log_debug(f"Flattening {source_path} into {single_child_dir}")
+        print_verbose(f"Flattening: '{source_base_name}' contains only '{child_base_name}'. New accumulated name: '{new_accumulated_name}'")
+        print_debug(f"Flattening {source_path} into {single_child_dir}")
 
         # Recurse into the single child directory
         process_source_directory(single_child_dir, destination_parent_path, new_accumulated_name, base_destination_dir, original_root_dir_abs)
@@ -169,11 +144,11 @@ def process_source_directory(source_path, destination_parent_path, accumulated_f
         # *** Handle Root Directory ***
         if is_processing_actual_root_dir:
             final_dest_dir_path = destination_parent_path
-            log_verbose(f"Processing root directory's children directly into '{final_dest_dir_path}'")
+            print_verbose(f"Processing root directory's children directly into '{final_dest_dir_path}'")
             # time.sleep(1) # Optional pause
         else:
             if not final_dir_name: # Check against creating folders without name
-                log_error(f"Calculated final directory name is empty for source '{source_path}'. This shouldn't happen unless processing root drive. Aborting.")
+                print_error(f"Calculated final directory name is empty for source '{source_path}'. This shouldn't happen unless processing root drive. Aborting.")
                 sys.exit(1)
 
             final_dest_dir_path = os.path.join(destination_parent_path, final_dir_name)
@@ -181,48 +156,48 @@ def process_source_directory(source_path, destination_parent_path, accumulated_f
             if not os.path.exists(final_dest_dir_path):
                 try:
                     relative_dest_path = os.path.relpath(final_dest_dir_path, base_destination_dir)
-                    log(f"  Creating directory: '{relative_dest_path}'", Colors.GREEN)
-                    log_verbose(f"Creating concrete destination directory: '{final_dest_dir_path}'")
+                    print(colours.GREEN, f"  Creating directory: '{relative_dest_path}'")
+                    print_verbose(f"Creating concrete destination directory: '{final_dest_dir_path}'")
                     os.makedirs(final_dest_dir_path)
                 except Exception as ex:
-                    log_error(f"Error creating directory '{final_dest_dir_path}': {ex}.")
+                    print_error(f"Error creating directory '{final_dest_dir_path}': {ex}.")
                     sys.exit(1)
             else:
-                log_verbose(f"Destination directory '{final_dest_dir_path}' already exists.")
+                print_verbose(f"Destination directory '{final_dest_dir_path}' already exists.")
             # time.sleep(1) # Optional pause
 
         # Process Files
         if child_files:
-            log_verbose(f"Processing {len(child_files)} files in '{source_path}'.")
+            print_verbose(f"Processing {len(child_files)} files in '{source_path}'.")
             for file_path in child_files:
                 file_name = os.path.basename(file_path)
                 destination_file_path = os.path.join(final_dest_dir_path, file_name)
                 relative_dest_file_path = os.path.relpath(destination_file_path, base_destination_dir)
 
                 try:
-                    log(f"    Copying file: '{file_name}' -> '{relative_dest_file_path}'", Colors.BLUE)
-                    log_verbose(f"Copying file '{file_path}' to '{destination_file_path}'")
+                    print(colours.BLUE, f"    Copying file: '{file_name}' -> '{relative_dest_file_path}'")
+                    print_verbose(f"Copying file '{file_path}' to '{destination_file_path}'")
                     shutil.copy2(file_path, destination_file_path) # copy2 preserves metadata
 
                     # Perform hash check
-                    log_verbose(f"Verifying hash for '{file_name}'...")
+                    print_verbose(f"Verifying hash for '{file_name}'...")
                     source_hash = get_file_sha256(file_path)
                     destination_hash = get_file_sha256(destination_file_path)
 
                     if source_hash != destination_hash:
-                        log_error(f"Hash mismatch for file '{file_name}'. Dest: '{relative_dest_file_path}'.")
-                        log_error(f"  Source SHA256: {source_hash}")
-                        log_error(f"  Destination SHA256: {destination_hash}")
+                        print_error(f"Hash mismatch for file '{file_name}'. Dest: '{relative_dest_file_path}'.")
+                        print_error(f"  Source SHA256: {source_hash}")
+                        print_error(f"  Destination SHA256: {destination_hash}")
                         sys.exit(1)
                     else:
-                        log_verbose(f"SHA256 hash match confirmed for '{file_name}'.")
+                        print_verbose(f"SHA256 hash match confirmed for '{file_name}'.")
                 except Exception as ex:
-                    log_error(f"Error during copy/verify for file '{file_path}' to '{destination_file_path}': {ex}.")
+                    print_error(f"Error during copy/verify for file '{file_path}' to '{destination_file_path}': {ex}.")
                     sys.exit(1)
 
         # Process Subdirectories
         if child_dirs:
-            log_verbose(f"Processing {len(child_dirs)} subdirectories in '{source_path}'.")
+            print_verbose(f"Processing {len(child_dirs)} subdirectories in '{source_path}'.")
             for dir_path in child_dirs:
                 process_source_directory(dir_path,
                                     final_dest_dir_path, # New parent
@@ -231,91 +206,87 @@ def process_source_directory(source_path, destination_parent_path, accumulated_f
                                     original_root_dir_abs)
 
         if child_count == 0:
-            log_verbose(f"Source directory '{source_path}' is empty.")
+            print_verbose(f"Source directory '{source_path}' is empty.")
 
         return # Processing for this level complete
 
 # --- End Main Functions ---
 
-def read_config(file_path: str) -> str:
-    """Reads and displays the contents of a configuration file."""
-    config = configparser.ConfigParser()
-
-    configPath = Path(__file__).resolve().parent / "..\\..\\..\\" / file_path
-    print(f"Config file path: {configPath}")
-    config.read(configPath)
-
-    print(f"Config file contents: {config.sections()}")
-
-    global root_dir, destination_dir
-
-    root_dir = config.get('Directories', 'OutDirectory')
-    destination_dir = config.get('Directories', 'FlatDirectory')
-
-
 # --- Main Function ---
 
-def main():
+def main(project_dir: str, module_dir: str) -> None:
+    """
+    Main function to execute the universal recursive flattening process.
+
+    Args:
+        project_dir (str): The directory containing the project configuration.
+        module_dir (str): The directory containing the module files.
+
+    Returns:
+        None
+    """
 
     global root_dir, destination_dir
-    read_config("bmsConf.ini")
+
+    # Load configuration from JSON file
+    try:
+        with open(os.path.join(project_dir, "project.json"), 'r') as f:
+            config = json.load(f)["Extract"]
+    except Exception as e:
+        print_error(f"Error loading project.json: {e}")
+        sys.exit(1)
+
+    try:
+        root_dir = config["Directories"]["OutDirectory"]
+        destination_dir = config["Directories"]["FlatDirectory"]
+    except Exception as e:
+        print_error(f"Error reading paths from project.json: {e}")
+        sys.exit(1)
 
 
     # --- Main Script ---
-    log_info("Starting universal recursive flattening copy process (root contents -> destination)...")
-    log_info(f"Source Root Directory: '{root_dir}'")
-    log_info(f"Destination Directory: '{destination_dir}'")
+    print(colours.YELLOW, "Starting universal recursive flattening copy process (root contents -> destination)...")
+    print(colours.CYAN, f"Source Root Directory: '{root_dir}'")
+    print(colours.CYAN, f"Destination Directory: '{destination_dir}'")
 
     root_dir_abs = os.path.abspath(root_dir)
     destination_dir_abs = os.path.abspath(destination_dir)
 
     # Validate RootDir
     if not os.path.isdir(root_dir_abs):
-        log_error(f"Root directory '{root_dir_abs}' not found or is not a directory.")
+        print_error(f"Root directory '{root_dir_abs}' not found or is not a directory.")
         sys.exit(1)
 
     # Ensure DestinationDir exists
     if not os.path.exists(destination_dir_abs):
-        log_warning(f"Destination directory '{destination_dir_abs}' not found. Creating...")
+        print(colours.YELLOW, f"Destination directory '{destination_dir_abs}' not found. Creating...")
         try:
             os.makedirs(destination_dir_abs)
-            log_success("Destination directory created successfully.")
+            print(colours.GREEN, "Destination directory created successfully.")
         except Exception as ex:
-            log_error(f"Failed to create destination directory '{destination_dir_abs}': {ex}")
+            print_error(f"Failed to create destination directory '{destination_dir_abs}': {ex}")
             sys.exit(1)
     elif not os.path.isdir(destination_dir_abs):
-        log_error(f"Destination path '{destination_dir_abs}' exists but is not a directory.")
+        print_error(f"Destination path '{destination_dir_abs}' exists but is not a directory.")
         sys.exit(1)
 
 
-    log_info("Starting processing from root directory's contents...")
-    log("--------------------------------------------------", Colors.GRAY)
+    print(colours.YELLOW, "Starting processing from root directory's contents...")
+    print(colours.GRAY, "--------------------------------------------------")
 
     try:
         # Initial call to the recursive function
         process_source_directory(root_dir_abs, destination_dir_abs, "", destination_dir_abs, root_dir_abs)
     except Exception as ex:
-        log_error(f"An unexpected error occurred during processing: {ex}")
+        print_error(f"An unexpected error occurred during processing: {ex}")
         import traceback
-        log_error(traceback.format_exc())
+        print_error(traceback.format_exc())
         sys.exit(1)
 
-    log("--------------------------------------------------", Colors.GRAY)
-    log_info("Universal recursive flattening copy process completed.")
-    log_success(f"Source directory contents from: '{root_dir_abs}'")
-    log_success(f"Destination directory: '{destination_dir_abs}'")
+    print(colours.GRAY, "--------------------------------------------------")
+    print(colours.GREEN, "Universal recursive flattening copy process completed.")
+    print(colours.GREEN, f"Source directory contents from: '{root_dir_abs}'")
+    print(colours.GREEN, f"Destination directory: '{destination_dir_abs}'")
 
 # --- End Main Function ---
 
-if __name__ == "__main__":
-    # --- Argument Parsing & Validation ---
-    if len(sys.argv) < 3:
-        print("Usage: python flat.py <RootDir> <DestinationDir>")
-    else:
-        global root_dir, destination_dir
-        root_dir = sys.argv[1]
-        destination_dir = sys.argv[2]
-
-    main()
-
-# --- End of Script ---
