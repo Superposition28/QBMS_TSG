@@ -10,7 +10,10 @@ import re
 import time
 import json
 from pathlib import Path
-from ....printer import print, print_error, print_verbose, print_debug, colours
+try:
+    from ....printer import print, print_error, print_verbose, print_debug, colours
+except ImportError:
+    from printer import print, print_error, print_verbose, print_debug, colours
 
 
 # -- Begin Global Variables --
@@ -24,16 +27,55 @@ DEBUG = "DEBUG" in os.environ and os.environ["DEBUG"].lower() == "true"
 
 # --- Sanitization Rules ---
 SANITIZATION_RULES = [
+    # "build++PS3++pal_en" → "EU_EN"
     {"pattern": re.escape("build++PS3++pal_en"), "replacement": "EU_EN", "is_regex": True},
+
+    # "story_mode++story_mode_design.str++story_mode_design_str" → "story_mode_design_STR"
     {"pattern": re.escape("story_mode++story_mode_design.str++story_mode_design_str"), "replacement": "story_mode_design_STR", "is_regex": True},
+
+    # "challenge_mode++challenge_mode_designSTR" → "challenge_mode_design_STR"
     {"pattern": re.escape("challenge_mode++challenge_mode_designSTR"), "replacement": "challenge_mode_design_STR", "is_regex": True},
+
+    # "texture_dictionary++whatever++chars" → "Textures"
     {"pattern": r"^texture_dictionary\+\+.*?\+\+chars$", "replacement": "Textures", "is_regex": True},
+
+    # "ASSET_RWS++texture_dictionary++GlobalFolder++costumes" → "RWS+Textures"
     {"pattern": re.escape("ASSET_RWS++texture_dictionary++GlobalFolder++costumes"), "replacement": "RWS+Textures", "is_regex": True},
+
+    # "texture_dictionary++vehicles++design" → "vehicles_Textures"
     {"pattern": r"^texture_dictionary\+\+(.*?)\+\+design$", "replacement": r"\1_Textures", "is_regex": True},
+
+    #\ASSET_RWS\texture_dictionary++gamehub  → ASSET_RWS\texture_dictionary
+    {"pattern": r"^ASSET_RWS\\texture_dictionary\+\+gamehub$", "replacement": r"ASSET_RWS\\texture_dictionary", "is_regex": True},
+
+
+    # "vehicle_Textures++Act_1_folderstream" → "Textures"
     {"pattern": r"^.*?_Textures\+\+Act_.*_folderstream$", "replacement": "Textures", "is_regex": True},
+
+    # "{something}.str++{something}_str" → "{something}STR"
     {"pattern": r"^(.*)\.str\+\+(.*)_str$", "replacement": r"\1STR", "is_regex": True},
+
+    # "assets_rws++props++props" → "ASSET_RWS"
     {"pattern": r"^assets_rws\+\+(.*?)\+\+\1$", "replacement": "ASSET_RWS", "is_regex": True},
-    {"pattern": r"^audio\+\+", "replacement": "", "is_regex": True}
+
+    # "audio++{something}" → ""
+    {"pattern": r"^audio\+\+", "replacement": "", "is_regex": True},
+
+    # "streams++colossaldonut++story_mode" → "streams"
+    #{"pattern": r"streams\+\+[^\\]+\+\+[^\\]+", "replacement": "streams++level++story", "is_regex": True}
+    {"pattern": r"streams\+\+[^\\]+\+\+[^\\]+", "replacement": "streams", "is_regex": True}
+
+    #81DE1738_str++EU_EN++assets++localization → EN++EU_EN++assets++local
+    {"pattern": r"^81DE1738_str\+\+EU_EN\+\+assets\+\+localization$", "replacement": "EN++EU_EN++assets++local", "is_regex": True},
+    #CD99D1BE_str++EU_EN++assets++localization → FR++EU_EN++assets++local
+    {"pattern": r"^CD99D1BE_str\+\+EU_EN\+\+assets\+\+localization$", "replacement": "FR++EU_EN++assets++local", "is_regex": True},
+    #6255953C_str++EU_EN++assets++localization → IT++EU_EN++assets++local
+    {"pattern": r"^6255953C_str\+\+EU_EN\+\+assets\+\+localization$", "replacement": "IT++EU_EN++assets++local", "is_regex": True},
+    #2919CD42_str++EU_EN++assets++localization → ES++EU_EN++assets++local
+    {"pattern": r"^2919CD42_str\+\+EU_EN\+\+assets\+\+localization$", "replacement": "ES++EU_EN++assets++local", "is_regex": True},
+    #95F47026_str++EU_EN++assets++localization → SS++EU_EN++assets++local
+    {"pattern": r"^95F47026_str\+\+EU_EN\+\+assets\+\+localization$", "replacement": "SS++EU_EN++assets++local", "is_regex": True},
+
 ]
 
 # --- Hash Calculation ---

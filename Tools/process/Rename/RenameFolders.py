@@ -1,7 +1,9 @@
 import os
 import json
-from ....printer import print, print_error, print_verbose, print_debug, colours
-
+try:
+	from ....printer import print, print_error, print_verbose, print_debug, colours
+except ImportError:
+	from printer import print, print_error, print_verbose, print_debug, colours
 
 def main(project_dir, module_dir) -> None:
 

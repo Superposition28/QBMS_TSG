@@ -3,7 +3,10 @@ import re
 import subprocess
 from datetime import datetime
 import json
-from ....printer import print, print_error, print_verbose, print_debug, colours
+try:
+	from ....printer import print, print_error, print_verbose, print_debug, colours
+except ImportError:
+	from printer import print, print_error, print_verbose, print_debug, colours
 
 
 def main(project_dir: str, module_dir: str) -> None:
