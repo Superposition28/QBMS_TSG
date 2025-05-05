@@ -63,7 +63,7 @@ SANITIZATION_RULES = [
 
     # "streams++colossaldonut++story_mode" → "streams"
     #{"pattern": r"streams\+\+[^\\]+\+\+[^\\]+", "replacement": "streams++level++story", "is_regex": True}
-    {"pattern": r"streams\+\+[^\\]+\+\+[^\\]+", "replacement": "streams", "is_regex": True}
+    {"pattern": r"streams\+\+[^\\]+\+\+[^\\]+", "replacement": "streams", "is_regex": True},
 
     #81DE1738_str++EU_EN++assets++localization → EN++EU_EN++assets++local
     {"pattern": r"^81DE1738_str\+\+EU_EN\+\+assets\+\+localization$", "replacement": "EN++EU_EN++assets++local", "is_regex": True},
