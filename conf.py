@@ -4,9 +4,9 @@ finding or creating the 'project.json' file and generating a module-specific
 configuration file.
 """
 try:
-	from .printer import print, print_error, print_verbose, print_debug, colours
+    from .printer import print, print_error, print_verbose, print_debug, colours
 except ImportError:
-	from printer import print, print_error, print_verbose, print_debug, colours
+    from printer import print, print_error, print_verbose, print_debug, colours
 
 import os
 from pathlib import Path
@@ -55,39 +55,39 @@ def create_conf(module_dir: Path, project_dir: Path) -> tuple[Path, dict]:
     # Check if the configuration file contains the module configuration 'Extract'
     if conf_path.exists():
         with open(conf_path, 'r') as f:
-            conf = json.load(f)
-            if module_name in conf.get('Extract', {}):
+            porjectConfig = json.load(f)
+            if module_name in porjectConfig.get('Extract', {}):
                 print(colours.CYAN, f"INFO 6 Configuration file already exists at {conf_path}")
-                return conf_path.resolve(), conf
+                return conf_path.resolve(), porjectConfig
             else:
                 print(colours.YELLOW, f"INFO 6 Configuration file exists but does not contain module '{module_name}'.")
                 print(colours.YELLOW, f"INFO 7 adding config to file for module '{module_name}'.")
 
-                conf = {
-                    'Extract': {
-                        'Config': {
-                            'module_name': module_name,
-                            'module_path': str(module_dir),
-                            'project_path': str(project_dir),
-                        },
-                        'Directories': {
-                            "StrDirectory": str(project_dir / "Source" / "USRDIR"),
-                            "OutDirectory": str(module_dir / "GameFiles" / "QbmsOut"),
-                            "FlatDirectory": str(module_dir / "GameFiles" / "quickbms_out"),
-                            "LogFilePath": str(module_dir / "qbms.log")
-                        },
-                        'Scripts': {
-                            "BmsScriptPath": str(module_dir / "Tools" / "quickbms" / "simpsons_str.bms"),
-                            "QuickBMSEXEPath": str(module_dir / "Tools" / "quickbms" / "exe" / "quickbms.exe"),
-                        }
+                ModuleConfig = {
+                    'Config': {
+                        'module_name': module_name,
+                        'module_path': str(module_dir),
+                        'project_path': str(project_dir),
+                    },
+                    'Directories': {
+                        "StrDirectory": str(project_dir / "Source" / "USRDIR"),
+                        "OutDirectory": str(module_dir / "GameFiles" / "QbmsOut"),
+                        "FlatDirectory": str(module_dir / "GameFiles" / "quickbms_out"),
+                        "LogFilePath": str(module_dir / "qbms.log")
+                    },
+                    'Scripts': {
+                        "BmsScriptPath": str(module_dir / "Tools" / "quickbms" / "simpsons_str.bms"),
+                        "QuickBMSEXEPath": str(module_dir / "Tools" / "quickbms" / "exe" / "quickbms.exe"),
                     }
                 }
+                # *** Key Change: Add the 'Extract' config to the loaded data ***
+                porjectConfig[module_name] = ModuleConfig
 
                 with open(conf_path, 'w') as f:
-                    json.dump(conf, f, indent=4)
+                    json.dump(porjectConfig, f, indent=4)
                 print(colours.GREEN, f"INFO 8 Created Extract.json for module '{module_name}' at {conf_path}")
 
-    return conf_path.resolve(), conf
+    return conf_path.resolve(), porjectConfig
 
 
 def main(module_dir: Path) -> None:
